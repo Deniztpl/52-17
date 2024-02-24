@@ -16,6 +16,7 @@ reps = 0
 timer = None
 FREQUENCY = 1250  # Set Frequency To 2500 Hertz
 DURATION = 1000
+TWENTY_MIN = 20*60
 
 # ---------------------------- TIMER RESET ------------------------------- # 
 def reset_timer():
@@ -53,6 +54,8 @@ def count_down(count):
         seconds = f"0{seconds}"
 
     canvas.itemconfig(timer_text, text=f"{minutes}:{seconds}")
+    if count % TWENTY_MIN == 0:
+        winsound.Beep(int(FREQUENCY/2), int(DURATION/2))
     if count > 0:
         global timer
         timer = window.after(1000, count_down, count - 1)
