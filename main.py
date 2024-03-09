@@ -3,7 +3,6 @@ import math
 import winsound
 from tkinter.simpledialog import askinteger
 
-
 # ---------------------------- CONSTANTS ------------------------------- #
 PINK = "#e2979c"
 RED = "#e7305b"
@@ -17,9 +16,13 @@ timer = None
 FREQUENCY = 1250  # Set Frequency To 2500 Hertz
 DURATION = 1000
 TWENTY_MIN = 20*60
+running = False
+left_count = 0
 
 # ---------------------------- TIMER RESET ------------------------------- # 
 def reset_timer():
+    global running
+    running = False
     window.after_cancel(timer)
     label.config(text="Timer", fg=GREEN)
     canvas.itemconfig(timer_text, text="00:00")
@@ -28,12 +31,31 @@ def reset_timer():
     global turns
     reps = 0
     turns = askinteger('Input', 'How many hours do you want', parent=window)
+    start_button.config(text="Start", command=start_timer)
+    
+
+# ---------------------------- Pause ------------------------------- # 
+def pause_timer():
+    global running
+    running = False
+    start_button.config(text="Start", command=continue_timer)
+
+# ---------------------------- Pause ------------------------------- # 
+def continue_timer():
+    global running
+    global left_count
+    running = True
+    start_button.config(text="Pause", command=pause_timer)
+    count_down(left_count)
 
 # ---------------------------- TIMER MECHANISM ------------------------------- # 
 def start_timer():
     global reps
+    global running
+    running = True
     reps += 1
 
+    start_button.config(text="Pause", command=pause_timer)
     work_sec = WORK_MIN*60
     short_break_sec = SHORT_BREAK_MIN*60
 
@@ -47,35 +69,38 @@ def start_timer():
     
 # ---------------------------- COUNTDOWN MECHANISM ------------------------------- # 
 def count_down(count):
+    global running
+    global left_count
+    left_count = count
+    if running:
+        minutes = math.floor(count / 60)
+        seconds = count % 60
+        if seconds < 10:
+            seconds = f"0{seconds}"
 
-    minutes = math.floor(count / 60)
-    seconds = count % 60
-    if seconds < 10:
-        seconds = f"0{seconds}"
+        canvas.itemconfig(timer_text, text=f"{minutes}:{seconds}")
+        if count % TWENTY_MIN == 0:
+            winsound.Beep(int(FREQUENCY/2), int(DURATION/2))
+        if count > 0:
+            global timer
+            timer = window.after(1000, count_down, count - 1)
+        else:
+            global reps
+            global turns
+            winsound.Beep(FREQUENCY, DURATION)
+            marks = ""
+            for _ in range(math.floor((reps+1)/2)):
+                marks += "✓"
+            tick.config(text=marks)
 
-    canvas.itemconfig(timer_text, text=f"{minutes}:{seconds}")
-    if count % TWENTY_MIN == 0:
-        winsound.Beep(int(FREQUENCY/2), int(DURATION/2))
-    if count > 0:
-        global timer
-        timer = window.after(1000, count_down, count - 1)
-    else:
-        global reps
-        global turns
-        winsound.Beep(FREQUENCY, DURATION)
-        marks = ""
-        for _ in range(math.floor((reps+1)/2)):
-            marks += "✓"
-        tick.config(text=marks)
-
-        if turns*2-1 == reps:
-            label.config(text="Finished",fg=RED)
-            return
-        start_timer()
+            if turns*2-1 == reps:
+                label.config(text="Finished",fg=RED)
+                return
+            start_timer()
         
 # ---------------------------- UI SETUP ------------------------------- #
 window = Tk()
-window.title("Pomodoro")
+window.title("52-17")
 window.config(padx=100, pady=50, bg=YELLOW)
 
 #Canvas
@@ -90,17 +115,17 @@ label = Label(text="Timer", fg=GREEN, font=(FONT_NAME, 30, "bold"), bg=YELLOW)
 label.grid(row=0, column=1)
 
 #Start button
-start_button = Button(text='Start', command=start_timer)
+start_button = Button(text='Start', command=start_timer, width=5)
 start_button.grid(row=2, column=0)
 
 #Reset button
-reset_button = Button(text="Reset", command=reset_timer)
+reset_button = Button(text="Reset", command=reset_timer, width=5)
 reset_button.grid(row=2, column=2)
 
 #Ticks
 tick = Label(fg=GREEN, font=(FONT_NAME, 20), bg=YELLOW)
 tick.grid(row=3, column=1)
 
-turns = askinteger('Input', 'How many hours do you want', parent=window)
+turns = askinteger('Input', 'How many sessions?', parent=window)
 
 window.mainloop()
